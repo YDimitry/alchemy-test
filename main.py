@@ -33,8 +33,8 @@ Base.metadata.create_all(engine)
 
 Session = sessionmaker(bind=engine)
 session = Session()
-df = '%m/%d/%Y %I:%M:%S %p'
-data = []
+# df = '%m/%d/%Y %I:%M:%S %p'
+# data = []
 
 # for d in reader:
 #     case = Case(id=d['ID'],
@@ -48,30 +48,43 @@ data = []
 #     data +=[case]
 #
 # session.add_all(data)
-with open('Crimes.csv', 'r') as f:
-    reader = csv.DictReader(f)
-    # d = next(reader)
-
-    for d in reader:
-        case = Case(id=d['ID'],
-                    number=d['Case Number'],
-                    date=datetime.strptime(d['Date'], df),
-                    block=d['Block'],
-                    description=d['Description'],
-                    location_description=d['Location Description'],
-                    arrest=d['Arrest'] == 'true',
-                    domestic=d['Domestic'] == 'true',
-                    ivcr=session.query(Ivcr).filter_by(code=d['IUCR']).first() or Ivcr(code=d['IUCR']),
-                    crimetype=session.query(CrimeType).filter_by(type=d['Primary Type']).first() or CrimeType(type=d['Primary Type']),
-                    beat=session.query(Beat).filter_by(code=d['Beat']).first() or Beat(code=d['Beat']),
-                    district=session.query(District).filter_by(code=d['District']).first() or District(code=d['District']),
-                    ward=session.query(Ward).filter_by(code=d['Ward']).first() or Ward(code=d['Ward']),
-                    communityarea=session.query(CommunityArea).filter_by(code=d['Community Area']).first() or CommunityArea(code=d['Community Area']),
-                    fbicode=session.query(FBICode).filter_by(code=d['FBI Code']).first() or FBICode(code=d['FBI Code']))
+# with open('Crimes.csv', 'r') as f:
+#     reader = csv.DictReader(f)
+#     # d = next(reader)
+#
+#     for d in reader:
+#         case = Case(id=d['ID'],
+#                     number=d['Case Number'],
+#                     date=datetime.strptime(d['Date'], df),
+#                     block=d['Block'],
+#                     description=d['Description'],
+#                     location_description=d['Location Description'],
+#                     arrest=d['Arrest'] == 'true',
+#                     domestic=d['Domestic'] == 'true',
+#                     ivcr=session.query(Ivcr).filter_by(code=d['IUCR']).first() or Ivcr(code=d['IUCR']),
+#                     crimetype=session.query(CrimeType).filter_by(type=d['Primary Type']).first() or CrimeType(type=d['Primary Type']),
+#                     beat=session.query(Beat).filter_by(code=d['Beat']).first() or Beat(code=d['Beat']),
+#                     district=session.query(District).filter_by(code=d['District']).first() or District(code=d['District']),
+#                     ward=session.query(Ward).filter_by(code=d['Ward']).first() or Ward(code=d['Ward']),
+#                     communityarea=session.query(CommunityArea).filter_by(code=d['Community Area']).first() or CommunityArea(code=d['Community Area']),
+#                     fbicode=session.query(FBICode).filter_by(code=d['FBI Code']).first() or FBICode(code=d['FBI Code']))
         # data += [case]
-        session.add(case)
+        # session.add(case)
 # session.add(case)
 # session.add_all(data)
-session.commit()
-case = session.query(Case).filter_by(number='HH684629').first()
-print(case)
+# session.commit()
+# cases = session.query(Case).filter(Case.date.between('2015-01-01','2015-12-31')).order_by(Case.date)
+# for case in cases:
+#     print(case.date,case.crimetype.type)
+from sqlalchemy import select, and_, func, desc
+conn = engine.connect()
+s = select([func.count(CrimeType.type).label('num_crimes'), CrimeType.type]).where(
+    and_(CrimeType.id == Case.crimetype_id, Case.date.between('2015-01-01','2016-01-01')))\
+    .group_by(CrimeType.type).order_by(desc('num_crimes'))
+
+result = conn.execute(s)
+
+for a,b in result:
+    print('{:<35}{}'.format(b, a))
+
+
